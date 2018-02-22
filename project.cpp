@@ -28,6 +28,7 @@ pid_t createProcess(char* args[], bool);
 void changeDirectory(char *);
 void parseCommand(vector<string>, string );
 void pipeValues(char* args[], char* args2[], vector<string>);
+void pipeFunctionality(char* args[], vector<string>);
 
 
 
@@ -191,6 +192,84 @@ void addHistory(string arr[], int counter, string cmd){
 
 }
 
+void pipeFunctionality(char* args[], vector<string> word){
+
+        // pipe found
+        // break into two parts 
+        char* args2[ARR_LENGTH];
+        fillDefaultArr(args2, ARR_LENGTH);
+        pipeValues(args, args2, word);
+
+        /**
+         * We are currently in the main process of the program 
+         * We create a child process 
+         * In that child process we funrther create a grandchild process 
+         * Now we use the grand child process to run the first part of the pipe 
+         * We use the child process, which is the parent of the grand parent process 
+         *      to run the second part of the pipe command
+         * We do this becuase when the child process terminates we donot 
+         *      leave the program becuase the child process of the main process has only terminated
+         */
+        pid_t pid; 
+        pid = fork(); // create a child process 
+        if(pid <0){
+            perror("Problem creating Pid");
+            exit(1);
+        }
+        else if(pid == 0){
+
+            int fd[2];
+            pipe(fd);
+            pid_t newPid = fork(); // here we create the grand child process
+            if(newPid == 0){
+
+                // grand child process
+                close(1); // close STDOUT
+                dup(fd[1]); // dublicate it to write end of the pi[e
+
+                close(fd[0]); // close the read end
+                execvp(args[0], args); // execute the program 
+                close(fd[1]); // close the read end of the file
+            
+            }
+            else if(newPid < 0){
+            
+                cout << "Error creating the process" << endl;
+                exit(1);
+            
+            }
+            else{
+
+                // parent process: child process of the main process
+            
+                wait(NULL); // wait until child process is completed
+
+                close(0); // close the STDIN file
+                dup(fd[0]); // dunlicate to the read side of the pipe 
+                close(fd[1]); // close the write side of the pipe
+                execvp(args2[0], args2); // execute the program
+                close(fd[0]); // close the read end of the file
+            
+            
+            
+            }
+        
+        }
+        else{
+            // parent process
+            wait(NULL);
+
+        }
+
+
+
+
+
+
+
+
+}
+
 /**
  * This function checks weather cd command or pipe 
  * @param cmd -> The command to parse through
@@ -203,48 +282,7 @@ void parseCommand(vector<string> word,  string cmd){
 
     if(cmd.find("|") != string::npos){
 
-        // pipe found
-        // break into two parts 
-        char* args2[ARR_LENGTH];
-        fillDefaultArr(args2, ARR_LENGTH);
-        pipeValues(args, args2, word);
-
-        // create two process one for the first part another for the second
-        int fd[2];
-        int status;
-        pipe(fd);
-        pid_t pid;
-        pid = fork();
-        if(pid <0){
-            perror("Problem creating Pid");
-            exit(1);
-        }
-        else if(pid == 0){
-        
-        
-            cout << "In child process " << endl; 
-            close(0); // close std out
-            // writing to fd[1]
-            dup(fd[0]);
-            close(fd[1]);
-            close(fd[0]); // close the file where output will be written to 
-            execvp(args2[0], args2);
-            exit(0);
-        
-        }
-        else{
-
-            cout << "In parent process" << endl;
-            close(1);
-            dup(fd[1]);
-            close(fd[0]);
-            execvp(args[0], args);
-            close(fd[1]); // close the file that we were reading from 
-        
-        }
-
-
-
+        pipeFunctionality(args, word);
 
     }
     else{
@@ -255,7 +293,15 @@ void parseCommand(vector<string> word,  string cmd){
 
         // NOTE - WE donot need to fill the last spot of args with NULL because
         //        fillDefaultArr does that
-        createProcess(args);
+        if(cmd.find("&") != string::npos){
+            // run in the back ground
+            createProcess(args, false);
+        }
+        else{
+            // run in the foreground
+        
+            createProcess(args);
+        }
 
     }
     
