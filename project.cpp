@@ -2,8 +2,7 @@
  * This project is a very basic shell 
  * It uses fork() to create a child process and exec() to load a program to it 
  * @author Aman Nagpal 
- * @version 1.0
- */
+ * @version 1.0 */
 
 #include <iostream>
 #include <string.h>
@@ -239,6 +238,7 @@ void pipeFunctionality(char* args[], vector<string> word){
                 close(fd[0]); // close the read end
                 execvp(args[0], args); // execute the program 
                 close(fd[1]); // close the read end of the file
+                exit(0);
             
             }
             else if(newPid < 0){
@@ -270,14 +270,8 @@ void pipeFunctionality(char* args[], vector<string> word){
 
         }
 
-
-
-
-
-
-
-
 }
+
 
 /**
  * This function checks weather cd command or pipe 
