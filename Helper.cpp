@@ -70,6 +70,7 @@ void fillDefaultArr(char* arr[], int len){
  */
 char* trim(char* cmd){
     while(isspace((unsigned char)*cmd)) cmd++;
+    cmd[(int)strlen(cmd)] = '\0';
     return cmd;
 }
 

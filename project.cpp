@@ -67,16 +67,25 @@ int main(int argc, char* argv[]){
                 char* pch;
                 pch = strtok(str, ";");
                 while(pch != NULL){
+                    // add the command to history
                     addHistory(history, counter, pch); 
                     counter++;
+
+                    // get rid of trailign white spaces
                     pch = trim(pch);
-                    cout << pch << endl;
+
+
                     vector<string> word = breakLine(pch);
                     parseCommand(word, pch);
+
+                    // reset the value
                     pch = strtok(NULL, ";");
                 
                 
                 }
+                // skip to the next itteration of the loop 
+                // we do this so that we donot go again to parseCommand
+                continue;
             
             
             }
@@ -290,6 +299,7 @@ void parseCommand(vector<string> word,  string cmd){
             args[i] = (char*)word.at(i).c_str();
         }
         args[(int)word.size()] = NULL;
+        
 
         // NOTE - WE donot need to fill the last spot of args with NULL because
         //        fillDefaultArr does that
