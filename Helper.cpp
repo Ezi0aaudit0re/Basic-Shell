@@ -61,9 +61,16 @@ void fillDefaultArr(char* arr[], int len){
     for(int i =0; i < len; i++){
         arr[i] = NULL;
     }
+}
 
-
-
+/**
+ * this method removes the trailing white spaces from a command
+ * @param -> cmd the address of the string
+ * source -> http://www.toptip.ca/2010/03/trim-leading-or-trailing-white-spaces.html
+ */
+char* trim(char* cmd){
+    while(isspace((unsigned char)*cmd)) cmd++;
+    return cmd;
 }
 
 

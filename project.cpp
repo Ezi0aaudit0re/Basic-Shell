@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <vector>
+#include <stdio.h>
 
 
 // custom header files 
@@ -58,6 +59,38 @@ int main(int argc, char* argv[]){
             cout << "user@CS575 " << dir << ": ";
             getline(cin, cmd);
 
+            // check if the string has ";" to run multiple commands 
+            if(cmd.find(";") != string::npos){
+                // source - http://www.cplusplus.com/reference/cstring/strtok/
+                char* str = (char*)cmd.c_str();
+                char* pch;
+                pch = strtok(str, ";");
+                while(pch != NULL){
+                    addHistory(history, counter, pch); 
+                    counter++;
+                    pch = trim(pch);
+                    cout << pch << endl;
+                    vector<string> word = breakLine(pch);
+                    parseCommand(word, pch);
+                    pch = strtok(NULL, ";");
+                
+                
+                }
+            
+            
+            }
+            else{
+                // only single command
+                 
+                 // add to the history
+                 addHistory(history, counter, cmd);
+                 // update the counter 
+                 counter++;
+            
+            
+            }
+
+
             vector<string> word = breakLine(cmd);
 
             // quit the program if the user entered quit  
@@ -79,21 +112,9 @@ int main(int argc, char* argv[]){
             
 
 
+            
 
 
-            // add to the history
-            addHistory(history, counter, cmd);
-
-
-           // check if the string has ";" to run multiple commands 
-
-            // TODO run multiple programs 
-
-
-
-        
-            // update the counter 
-            counter++;
 
         
         }
@@ -122,12 +143,6 @@ pid_t createProcess(char* args[], bool wait_process=true){
 
 
     if(pid == 0){
-        // child process
-        //string ls = "ls";
-        //string flag = "-a";
-        //args[0] = (char*)ls.c_str();
-        //args[1] = (char*)flag.c_str();
-        //args[2] = NULL;
         execvp(args[0], args);
         exit(0);
     }
@@ -187,6 +202,7 @@ void parseCommand(vector<string> word,  string cmd){
     
 
     if(cmd.find("|") != string::npos){
+
         // pipe found
         // break into two parts 
         char* args2[ARR_LENGTH];
@@ -194,7 +210,42 @@ void parseCommand(vector<string> word,  string cmd){
         pipeValues(args, args2, word);
 
         // create two process one for the first part another for the second
-        // TODO
+        int fd[2];
+        int status;
+        pipe(fd);
+        pid_t pid;
+        pid = fork();
+        if(pid <0){
+            perror("Problem creating Pid");
+            exit(1);
+        }
+        else if(pid == 0){
+        
+        
+            cout << "In child process " << endl; 
+            close(0); // close std out
+            // writing to fd[1]
+            dup(fd[0]);
+            close(fd[1]);
+            close(fd[0]); // close the file where output will be written to 
+            execvp(args2[0], args2);
+            exit(0);
+        
+        }
+        else{
+
+            cout << "In parent process" << endl;
+            close(1);
+            dup(fd[1]);
+            close(fd[0]);
+            execvp(args[0], args);
+            close(fd[1]); // close the file that we were reading from 
+        
+        }
+
+
+
+
     }
     else{
         for(int i = 0; i < (int) word.size(); i++){
@@ -231,8 +282,6 @@ void pipeValues(char* args[], char* args2[], vector<string> word){
             for(int j = i; j < (int) word.size(); j++){
                 args2[j - i] = (char*)word.at(j).c_str();
             }
-            cout << "The second part of pipe is: " << endl;
-            printArr(args2, 12);
             break; // break out of the outer loop the one with i
         }
         else{
